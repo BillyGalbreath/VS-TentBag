@@ -83,9 +83,13 @@ public class ItemTentBag : Item {
 
         // clear area in world
         entity.World.BulkBlockAccessor.WalkBlocks(start, end, (block, posX, posY, posZ) => {
-            if (block.BlockId != 0) {
-                entity.World.BulkBlockAccessor.SetBlock(0, TentBag.Instance.Compat!.NewBlockPos(posX, posY, posZ));
+            if (block.BlockId == 0) {
+                return;
             }
+
+            BlockPos pos = TentBag.Instance.Compat!.NewBlockPos(posX, posY, posZ);
+            entity.World.BulkBlockAccessor.SetBlock(0, pos);
+            entity.World.BulkBlockAccessor.MarkBlockModified(pos);
         });
         entity.World.BulkBlockAccessor.Commit();
 
@@ -124,6 +128,18 @@ public class ItemTentBag : Item {
             SendClientError(entity, Lang.Get("tentbag:tentbag-unpack-error"));
             return;
         }
+
+        // clear area in world
+        entity.World.BulkBlockAccessor.WalkBlocks(start.AddCopy(0, 1, 0), end, (block, posX, posY, posZ) => {
+            if (block.BlockId == 0) {
+                return;
+            }
+
+            BlockPos pos = TentBag.Instance.Compat!.NewBlockPos(posX, posY, posZ);
+            entity.World.BulkBlockAccessor.SetBlock(0, pos);
+            entity.World.BulkBlockAccessor.MarkBlockModified(pos);
+        });
+        entity.World.BulkBlockAccessor.Commit();
 
         // paste the schematic into the world
         BlockPos adjustedStart = bs.AdjustStartPos(start.Add(_config.Radius, 1, _config.Radius), EnumOrigin.BottomCenter);
