@@ -45,7 +45,7 @@ public class FileWatcher {
         }
 
         // wait 100ms for other changes to process and then reload config
-        TentBag.Api?.Event.RegisterCallback(_ => {
+        TentBag.Instance.Api?.Event.RegisterCallback(_ => {
             if (!string.IsNullOrEmpty(changeType)) {
                 TentBag.Instance.Mod.Logger.Event($"Detected the config was {changeType}");
             }
@@ -53,7 +53,7 @@ public class FileWatcher {
             Config.Reload();
 
             // wait 100ms more to remove this change from the queue since the reload triggers another write
-            TentBag.Api.Event.RegisterCallback(_ => _queue.TryRemove(changeType, out bool _), 100);
+            TentBag.Instance.Api.Event.RegisterCallback(_ => _queue.TryRemove(changeType, out bool _), 100);
         }, 100);
     }
 

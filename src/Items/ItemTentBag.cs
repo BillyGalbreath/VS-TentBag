@@ -84,7 +84,7 @@ public class ItemTentBag : Item {
         // clear area in world
         entity.World.BulkBlockAccessor.WalkBlocks(start, end, (block, posX, posY, posZ) => {
             if (block.BlockId != 0) {
-                entity.World.BulkBlockAccessor.SetBlock(0, new BlockPos(posX, posY, posZ));
+                entity.World.BulkBlockAccessor.SetBlock(0, TentBag.Instance.Compat!.NewBlockPos(posX, posY, posZ));
             }
         });
         entity.World.BulkBlockAccessor.Commit();
@@ -130,7 +130,7 @@ public class ItemTentBag : Item {
         bs.ReplaceMode = EnumReplaceMode.ReplaceAll;
         bs.Place(entity.World.BulkBlockAccessor, entity.World, adjustedStart);
         entity.World.BulkBlockAccessor.Commit();
-        bs.PlaceEntitiesAndBlockEntities(entity.World.BulkBlockAccessor, entity.World, adjustedStart, bs.BlockCodes, bs.ItemCodes);
+        TentBag.Instance.Compat!.InvokePlaceEntitiesAndBlockEntities(bs, entity.World.BulkBlockAccessor, entity.World, adjustedStart, bs.BlockCodes, bs.ItemCodes);
 
         // drop empty tentbag on the ground and remove empty from inventory
         ItemStack empty = new(entity.World.GetItem(EmptyBag), slot.StackSize);

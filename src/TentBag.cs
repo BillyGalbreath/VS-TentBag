@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using TentBag.Compatibility;
 using TentBag.Configuration;
 using TentBag.Items;
 using TentBag.Network;
@@ -11,9 +12,10 @@ namespace TentBag;
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
 public class TentBag : ModSystem {
     public static TentBag Instance { get; private set; } = null!;
-    public static ICoreAPI? Api => Instance._api;
 
-    private ICoreAPI? _api;
+    public ICoreAPI? Api { get; private set; }
+    public Compat? Compat { get; private set; }
+
     private IServerNetworkChannel? _serverChannel;
 
     public TentBag() {
@@ -21,7 +23,9 @@ public class TentBag : ModSystem {
     }
 
     public override void StartPre(ICoreAPI api) {
-        _api = api;
+        Api = api;
+
+        Compat = Compat.GetVersion();
     }
 
     public override void Start(ICoreAPI api) {
@@ -49,14 +53,14 @@ public class TentBag : ModSystem {
 
     private void HandleErrorPacket(ErrorPacket packet) {
         if (!string.IsNullOrEmpty(packet.Error)) {
-            (_api as ICoreClientAPI)?.TriggerIngameError(this, "error", packet.Error);
+            (Api as ICoreClientAPI)?.TriggerIngameError(this, "error", packet.Error);
         }
     }
 
     public override void Dispose() {
         Config.Dispose();
 
-        _api = null;
+        Api = null;
         _serverChannel = null;
     }
 }

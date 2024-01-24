@@ -9,7 +9,7 @@ public static class BlockExtensions {
         for (int x = start.X; x < end.X + 1; ++x) {
             for (int y = start.Y; y < end.Y + 1; ++y) {
                 for (int z = start.Z; z < end.Z + 1; ++z) {
-                    BlockPos pos = new(x, y, z);
+                    BlockPos pos = TentBag.Instance.Compat!.NewBlockPos(x, y, z);
 
                     int blockId = world.BulkBlockAccessor.GetBlock(pos, 1).BlockId;
                     int fluidId = world.BulkBlockAccessor.GetBlock(pos, 2).BlockId;
