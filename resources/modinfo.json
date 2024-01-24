@@ -1,0 +1,15 @@
+{
+  "type": "code",
+  "name": "TentBag",
+  "modid": "tentbag",
+  "version": "1.0.0",
+  "description": "Adds a tent bag for Vintage Story",
+  "website": "https://github.com/BillyGalbreath/VS-TentBag",
+  "authors": [ "BillyGalbreath" ],
+  "side": "Universal",
+  "requiredOnClient": true,
+  "requiredOnServer": true,
+  "dependencies": {
+    "game": "1.18.8"
+  }
+}
