@@ -59,20 +59,21 @@ public class ItemTentBag : Item {
         _config = Config.GetConfig();
 
         string contents = slot.Itemstack.Attributes.GetString("tent-contents");
+        IBlockAccessor blockAccessor = entity.World.BlockAccessor;
         if (contents == null) {
-            PackTent(entity, blockSel, slot);
+            PackTent(entity, blockAccessor, blockSel, slot);
         } else {
-            UnpackTent(entity, blockSel, slot, contents);
+            UnpackTent(entity, blockAccessor, blockSel, slot, contents);
         }
     }
 
-    private void PackTent(EntityPlayer entity, BlockSelection blockSel, ItemSlot slot) {
-        int y = IsPlantOrRock(entity.World.BulkBlockAccessor.GetBlock(blockSel.Position)) ? 1 : 0;
+    private void PackTent(EntityPlayer entity, IBlockAccessor blockAccessor, BlockSelection blockSel, ItemSlot slot) {
+        int y = IsPlantOrRock(blockAccessor.GetBlock(blockSel.Position)) ? 1 : 0;
 
         BlockPos start = blockSel.Position.AddCopy(-_config.Radius, 1 - y, -_config.Radius);
         BlockPos end = blockSel.Position.AddCopy(_config.Radius, Math.Max(_config.Height, 3), _config.Radius);
 
-        if (!CanPack(entity, start, end)) {
+        if (!CanPack(entity, blockAccessor, start, end)) {
             return;
         }
 
@@ -82,16 +83,16 @@ public class ItemTentBag : Item {
         bs.Pack(entity.World, start);
 
         // clear area in world
-        entity.World.BulkBlockAccessor.WalkBlocks(start, end, (block, posX, posY, posZ) => {
+        blockAccessor.WalkBlocks(start, end, (block, posX, posY, posZ) => {
             if (block.BlockId == 0) {
                 return;
             }
 
             BlockPos pos = TentBag.Instance.Compat!.NewBlockPos(posX, posY, posZ);
-            entity.World.BulkBlockAccessor.SetBlock(0, pos);
-            entity.World.BulkBlockAccessor.MarkBlockModified(pos);
+            blockAccessor.SetBlock(0, pos);
+            blockAccessor.MarkBlockModified(pos);
         });
-        entity.World.BulkBlockAccessor.Commit();
+        blockAccessor.Commit();
 
 
         // drop packed tentbag on the ground and remove empty from inventory
@@ -111,13 +112,13 @@ public class ItemTentBag : Item {
         entity.ReduceOnlySaturation(_config.BuildEffort);
     }
 
-    private void UnpackTent(EntityPlayer entity, BlockSelection blockSel, ItemSlot slot, string contents) {
-        int y = IsPlantOrRock(entity.World.BulkBlockAccessor.GetBlock(blockSel.Position)) ? 1 : 0;
+    private void UnpackTent(EntityPlayer entity, IBlockAccessor blockAccessor, BlockSelection blockSel, ItemSlot slot, string contents) {
+        int y = IsPlantOrRock(blockAccessor.GetBlock(blockSel.Position)) ? 1 : 0;
 
         BlockPos start = blockSel.Position.AddCopy(-_config.Radius, 0 - y, -_config.Radius);
         BlockPos end = blockSel.Position.AddCopy(_config.Radius, Math.Max(_config.Height, 3), _config.Radius);
 
-        if (!CanUnpack(entity, start, end)) {
+        if (!CanUnpack(entity, blockAccessor, start, end)) {
             return;
         }
 
@@ -130,23 +131,23 @@ public class ItemTentBag : Item {
         }
 
         // clear area in world
-        entity.World.BulkBlockAccessor.WalkBlocks(start.AddCopy(0, 1, 0), end, (block, posX, posY, posZ) => {
+        blockAccessor.WalkBlocks(start.AddCopy(0, 1, 0), end, (block, posX, posY, posZ) => {
             if (block.BlockId == 0) {
                 return;
             }
 
             BlockPos pos = TentBag.Instance.Compat!.NewBlockPos(posX, posY, posZ);
-            entity.World.BulkBlockAccessor.SetBlock(0, pos);
-            entity.World.BulkBlockAccessor.MarkBlockModified(pos);
+            blockAccessor.SetBlock(0, pos);
+            blockAccessor.MarkBlockModified(pos);
         });
-        entity.World.BulkBlockAccessor.Commit();
+        blockAccessor.Commit();
 
         // paste the schematic into the world
         BlockPos adjustedStart = bs.AdjustStartPos(start.Add(_config.Radius, 1, _config.Radius), EnumOrigin.BottomCenter);
         bs.ReplaceMode = EnumReplaceMode.ReplaceAll;
-        bs.Place(entity.World.BulkBlockAccessor, entity.World, adjustedStart);
-        entity.World.BulkBlockAccessor.Commit();
-        TentBag.Instance.Compat!.InvokePlaceEntitiesAndBlockEntities(bs, entity.World.BulkBlockAccessor, entity.World, adjustedStart, bs.BlockCodes, bs.ItemCodes);
+        bs.Place(blockAccessor, entity.World, adjustedStart);
+        blockAccessor.Commit();
+        TentBag.Instance.Compat!.InvokePlaceEntitiesAndBlockEntities(bs, blockAccessor, entity.World, adjustedStart, bs.BlockCodes, bs.ItemCodes);
 
         // drop empty tentbag on the ground and remove empty from inventory
         ItemStack empty = new(entity.World.GetItem(EmptyBag), slot.StackSize);
@@ -164,10 +165,10 @@ public class ItemTentBag : Item {
         entity.ReduceOnlySaturation(_config.BuildEffort);
     }
 
-    private static bool CanPack(EntityPlayer entity, BlockPos start, BlockPos end) {
+    private static bool CanPack(EntityPlayer entity, IBlockAccessor blockAccessor, BlockPos start, BlockPos end) {
         bool allowed = true;
 
-        entity.World.BulkBlockAccessor.SearchBlocks(start, end, (block, pos) => {
+        blockAccessor.SearchBlocks(start, end, (block, pos) => {
             if (!entity.World.Claims.TryAccess(entity.Player, pos, EnumBlockAccessFlags.BuildOrBreak)) {
                 return allowed = false;
             }
@@ -184,10 +185,10 @@ public class ItemTentBag : Item {
         return allowed;
     }
 
-    private bool CanUnpack(EntityPlayer entity, BlockPos start, BlockPos end) {
+    private bool CanUnpack(EntityPlayer entity, IBlockAccessor blockAccessor, BlockPos start, BlockPos end) {
         bool allowed = true;
 
-        entity.World.BulkBlockAccessor.SearchBlocks(start, end, (block, pos) => {
+        blockAccessor.SearchBlocks(start, end, (block, pos) => {
             if (!entity.World.Claims.TryAccess(entity.Player, pos, EnumBlockAccessFlags.BuildOrBreak)) {
                 return allowed = false;
             }
