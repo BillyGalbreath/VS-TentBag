@@ -8,8 +8,8 @@
   "textureSizes": {
   },
   "textures": {
-    "mat": "block/wood/bed/normal/blanket/blueplaid-feet",
-    "frill": "block/wood/bed/normal/blanket/blueplaid-feet-sides"
+    "mat": "game:block/wood/bed/normal/blanket/blueplaid-feet",
+    "frill": "game:block/wood/bed/normal/blanket/blueplaid-feet-sides"
   },
   "elements": [
     {
