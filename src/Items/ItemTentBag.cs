@@ -182,7 +182,7 @@ public class ItemTentBag : Item {
                 blocks.Add(pos);
             } else if (IsBannedBlock(block.Code)) {
                 if (!notified) {
-                    SendClientError(entity, Lang.Get("tentbag:tentbag-illegal-item", block.Code));
+                    SendClientError(entity, Lang.Get("tentbag:tentbag-illegal-item", block.GetPlacedBlockName(entity.World, pos)));
                     notified = true;
                 }
 
