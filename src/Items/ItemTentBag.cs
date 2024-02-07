@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using TentBag.Configuration;
 using TentBag.Extensions;
 using Vintagestory.API.Common;
@@ -37,6 +39,9 @@ public class ItemTentBag : Item {
         new("game:forge")
     };
 
+    private static readonly List<BlockPos> EmptyBlockPosList = Array.Empty<BlockPos>().ToList();
+    private const int HighlightColor = 0xFF | (0x2F << 24);
+
     private static bool IsAirOrNull(Block? block) => block is not { Replaceable: < 9505 };
     private bool IsPlantOrRock(Block? block) => _config.ReplacePlantsAndRocks && block?.Replaceable is >= 5500 and <= 6500;
     private bool IsReplaceable(Block? block) => IsAirOrNull(block) || IsPlantOrRock(block);
@@ -44,6 +49,7 @@ public class ItemTentBag : Item {
     private static void SendClientError(EntityPlayer entity, string error) => TentBag.Instance.SendClientError(entity.Player, error);
 
     private Config _config = null!;
+    private long _highlightId;
 
     public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection? blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handling) {
         if (blockSel == null || byEntity is not EntityPlayer entity) {
@@ -165,52 +171,58 @@ public class ItemTentBag : Item {
         entity.ReduceOnlySaturation(_config.BuildEffort);
     }
 
-    private static bool CanPack(EntityPlayer entity, IBlockAccessor blockAccessor, BlockPos start, BlockPos end) {
-        bool allowed = true;
+    private bool CanPack(EntityPlayer entity, IBlockAccessor blockAccessor, BlockPos start, BlockPos end) {
+        List<BlockPos> blocks = new();
+        bool notified = false;
 
-        blockAccessor.SearchBlocks(start, end, (block, pos) => {
+        blockAccessor.WalkBlocks(start, end, (block, posX, posY, posZ) => {
+            BlockPos pos = new(posX, posY, posZ, 0);
             if (!entity.World.Claims.TryAccess(entity.Player, pos, EnumBlockAccessFlags.BuildOrBreak)) {
-                return allowed = false;
-            }
+                notified = true;
+                blocks.Add(pos);
+            } else if (IsBannedBlock(block.Code)) {
+                if (!notified) {
+                    SendClientError(entity, Lang.Get("tentbag:tentbag-illegal-item", block.Code));
+                    notified = true;
+                }
 
-            // ReSharper disable once InvertIf
-            if (IsBannedBlock(block.Code)) {
-                SendClientError(entity, Lang.Get("tentbag:tentbag-illegal-item", block.Code));
-                return allowed = false;
+                blocks.Add(pos);
             }
-
-            return true;
         });
 
-        return allowed;
+        return !HighlightBlocks(entity, blocks);
     }
 
     private bool CanUnpack(EntityPlayer entity, IBlockAccessor blockAccessor, BlockPos start, BlockPos end) {
-        bool allowed = true;
+        List<BlockPos> blocks = new();
+        bool notified = false;
 
-        blockAccessor.SearchBlocks(start, end, (block, pos) => {
+        blockAccessor.WalkBlocks(start, end, (block, posX, posY, posZ) => {
+            BlockPos pos = new(posX, posY, posZ, 0);
             if (!entity.World.Claims.TryAccess(entity.Player, pos, EnumBlockAccessFlags.BuildOrBreak)) {
-                return allowed = false;
-            }
+                notified = true;
+                blocks.Add(pos);
+            } else if (pos.Y == start.Y) {
+                // ReSharper disable once InvertIf
+                if (_config.RequireFloor && !block.SideSolid[BlockFacing.indexUP]) {
+                    if (!notified) {
+                        SendClientError(entity, Lang.Get("tentbag:tentbag-solid-ground"));
+                        notified = true;
+                    }
 
-            if (pos.Y == start.Y) {
-                if (!_config.RequireFloor || block.SideSolid[BlockFacing.indexUP]) {
-                    return allowed = true;
+                    blocks.Add(pos);
+                }
+            } else if (!IsReplaceable(block)) {
+                if (!notified) {
+                    SendClientError(entity, Lang.Get("tentbag:tentbag-clear-area"));
+                    notified = true;
                 }
 
-                SendClientError(entity, Lang.Get("tentbag:tentbag-solid-ground"));
-                return allowed = false;
+                blocks.Add(pos);
             }
-
-            if (IsReplaceable(block)) {
-                return allowed = true;
-            }
-
-            SendClientError(entity, Lang.Get("tentbag:tentbag-clear-area"));
-            return allowed = false;
         });
 
-        return allowed;
+        return !HighlightBlocks(entity, blocks);
     }
 
     private static bool IsBannedBlock(AssetLocation? needle) {
@@ -229,5 +241,21 @@ public class ItemTentBag : Item {
         }
 
         return false;
+    }
+
+    private bool HighlightBlocks(EntityPlayer entity, List<BlockPos> blocks) {
+        if (_highlightId > 0) {
+            api.Event.UnregisterCallback(_highlightId);
+        }
+
+        if (blocks.Count <= 0) {
+            return false;
+        }
+
+        entity.World.HighlightBlocks(entity.Player, 1337, blocks, Enumerable.Repeat(HighlightColor, blocks.Count).ToList());
+
+        _highlightId = api.Event.RegisterCallback(_ => entity.World.HighlightBlocks(entity.Player, 1337, EmptyBlockPosList), 2500);
+
+        return true;
     }
 }
