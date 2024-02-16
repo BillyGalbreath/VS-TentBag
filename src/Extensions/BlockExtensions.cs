@@ -17,9 +17,10 @@ public static class BlockExtensions {
                         blockId = 0;
                     }
 
-                    if (blockId == 0 && fluidId == 0) {
+                    // don't skip air (can cause unpack to be off centered)
+                    /*if (blockId == 0 && fluidId == 0) {
                         continue;
-                    }
+                    }*/
 
                     bs.BlocksUnpacked[pos] = blockId;
                     bs.FluidsLayerUnpacked[pos] = fluidId;
