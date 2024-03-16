@@ -1,16 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <PackageId>Pl3x.TentBag</PackageId>
-        <Title>TentBag</Title>
-        <Authors>BillyGalbreath</Authors>
-        <Company>Pl3x</Company>
-        <Description>Adds a tent bag for Vintage Story</Description>
-        <Copyright>Copyright © 2024 William Blake Galbreath</Copyright>
-        <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <PackageIcon>modicon.png</PackageIcon>
-        <RepositoryUrl>https://github.com/BillyGalbreath/VS-TentBag</RepositoryUrl>
-        <RepositoryType>git</RepositoryType>
         <TargetFramework>net7.0</TargetFramework>
         <EmbedAllSources>true</EmbedAllSources>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -19,9 +9,9 @@
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-        <DebugType>pdbonly</DebugType>
+        <DebugType>embedded</DebugType>
         <DebugSymbols>true</DebugSymbols>
-        <ExcludeGeneratedDebugSymbol>False</ExcludeGeneratedDebugSymbol>
+        <ExcludeGeneratedDebugSymbol>false</ExcludeGeneratedDebugSymbol>
     </PropertyGroup>
 
     <ItemGroup>
@@ -68,11 +58,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="YamlDotNet" Version="13.7.1"/>
+        <PackageReference Include="YamlDotNet" Version="13.7.1" />
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="LICENSE" CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="LICENSE" CopyToOutputDirectory="PreserveNewest" />
         <None Include="resources/**" CopyToOutputDirectory="PreserveNewest">
             <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
         </None>
@@ -80,13 +70,13 @@
 
     <Target Name="FilterCopyLocalItems" AfterTargets="ResolvePackageDependenciesForBuild">
         <ItemGroup>
-            <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' != 'YamlDotNet'"/>
+            <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' != 'YamlDotNet'" />
         </ItemGroup>
     </Target>
 
     <Target Name="Package" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Release'">
-        <MakeDir Directories="bin/Mods"/>
-        <ZipDirectory DestinationFile="bin/Mods/$(TargetName).zip" SourceDirectory="$(TargetDir)" Overwrite="true"/>
+        <MakeDir Directories="bin/Mods" />
+        <ZipDirectory DestinationFile="bin/Mods/$(TargetName).zip" SourceDirectory="$(TargetDir)" Overwrite="true" />
     </Target>
 
 </Project>
