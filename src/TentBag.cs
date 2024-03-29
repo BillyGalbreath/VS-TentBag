@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using TentBag.Compatibility;
 using TentBag.Configuration;
 using TentBag.Items;
 using TentBag.Network;
@@ -14,7 +13,6 @@ public class TentBag : ModSystem {
     public static TentBag Instance { get; private set; } = null!;
 
     public ICoreAPI? Api { get; private set; }
-    public Compat? Compat { get; private set; }
 
     private IServerNetworkChannel? _serverChannel;
 
@@ -24,8 +22,6 @@ public class TentBag : ModSystem {
 
     public override void StartPre(ICoreAPI api) {
         Api = api;
-
-        Compat = Compat.GetVersion();
     }
 
     public override void Start(ICoreAPI api) {

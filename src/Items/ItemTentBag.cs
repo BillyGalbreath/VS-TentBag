@@ -94,7 +94,7 @@ public class ItemTentBag : Item {
                 return;
             }
 
-            BlockPos pos = TentBag.Instance.Compat!.NewBlockPos(posX, posY, posZ);
+            BlockPos pos = new(posX, posY, posZ, 0);
             blockAccessor.SetBlock(0, pos);
             blockAccessor.MarkBlockModified(pos);
         });
@@ -142,7 +142,7 @@ public class ItemTentBag : Item {
                 return;
             }
 
-            BlockPos pos = TentBag.Instance.Compat!.NewBlockPos(posX, posY, posZ);
+            BlockPos pos = new(posX, posY, posZ, 0);
             blockAccessor.SetBlock(0, pos);
             blockAccessor.MarkBlockModified(pos);
         });
@@ -153,7 +153,7 @@ public class ItemTentBag : Item {
         bs.ReplaceMode = EnumReplaceMode.ReplaceAll;
         bs.Place(blockAccessor, entity.World, adjustedStart);
         blockAccessor.Commit();
-        TentBag.Instance.Compat!.InvokePlaceEntitiesAndBlockEntities(bs, blockAccessor, entity.World, adjustedStart, bs.BlockCodes, bs.ItemCodes);
+        bs.PlaceEntitiesAndBlockEntities(blockAccessor, entity.World, adjustedStart, bs.BlockCodes, bs.ItemCodes);
 
         // drop empty tentbag on the ground and remove empty from inventory
         ItemStack empty = new(entity.World.GetItem(EmptyBag), slot.StackSize);
