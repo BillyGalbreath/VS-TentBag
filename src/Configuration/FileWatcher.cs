@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using Vintagestory.API.Config;
 
@@ -45,7 +46,7 @@ public class FileWatcher {
         }
 
         // wait 100ms for other changes to process and then reload config
-        TentBag.Instance.Api?.Event.RegisterCallback(_ => {
+        Callback(_ => {
             if (!string.IsNullOrEmpty(changeType)) {
                 TentBag.Instance.Mod.Logger.Event($"Detected the config was {changeType}");
             }
@@ -53,8 +54,15 @@ public class FileWatcher {
             Config.Reload();
 
             // wait 100ms more to remove this change from the queue since the reload triggers another write
-            TentBag.Instance.Api.Event.RegisterCallback(_ => _queue.TryRemove(changeType, out bool _), 100);
+            Callback(_ => _queue.TryRemove(changeType, out bool _), 100);
         }, 100);
+    }
+
+    private static void Callback(Action<float> action, int millisecondDelay) {
+        TentBag.Instance.Api?.Event.EnqueueMainThreadTask(
+            () => TentBag.Instance.Api?.Event.RegisterCallback(action, millisecondDelay),
+            ""
+        );
     }
 
     public void Dispose() {

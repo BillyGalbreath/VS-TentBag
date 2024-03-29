@@ -31,7 +31,7 @@ public sealed class Config {
         TentBag.Instance.Mod.Logger.Event($"Loading config from {ConfigFile}");
 
         _config = Write(Read());
-        
+
         _watcher ??= new FileWatcher();
 
         return _config;
