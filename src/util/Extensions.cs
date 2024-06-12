@@ -1,11 +1,25 @@
-﻿using Vintagestory.API.Common;
+using System;
+using System.Reflection;
+using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
+using Vintagestory.GameContent;
 
-namespace TentBag.Extensions;
+namespace TentBag.util;
 
-public static class BlockExtensions {
+public static class Extensions {
+    private static FieldInfo? _sprintCounter;
+
+    public static void ReduceOnlySaturation(this EntityPlayer entity, float amount) {
+        EntityBehaviorHunger? hunger = entity.GetBehavior<EntityBehaviorHunger>();
+        if (hunger == null) {
+            return;
+        }
+        hunger.Saturation = Math.Max(0, hunger.Saturation - amount);
+        (_sprintCounter ??= hunger.GetType().GetField("sprintCounter", BindingFlags.Instance | BindingFlags.NonPublic))?.SetValue(hunger, 0);
+    }
+
     public static void AddAreaWithoutEntities(this BlockSchematic bs, IWorldAccessor world, BlockPos start, BlockPos end) {
-        // add 1 to end to make it's position inclusive
+        // add 1 to end to make its position inclusive
         for (int x = start.X; x < end.X + 1; ++x) {
             for (int y = start.Y; y < end.Y + 1; ++y) {
                 for (int z = start.Z; z < end.Z + 1; ++z) {

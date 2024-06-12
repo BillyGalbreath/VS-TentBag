@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using TentBag.Configuration;
-using TentBag.Extensions;
+using TentBag.util;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
@@ -11,10 +11,10 @@ using Vintagestory.API.Util;
 namespace TentBag.Items;
 
 public class ItemTentBag : Item {
-    private static readonly AssetLocation EmptyBag = new("tentbag:tentbag-empty");
-    private static readonly AssetLocation PackedBag = new("tentbag:tentbag-packed");
+    private static readonly AssetLocation _emptyBag = new("tentbag:tentbag-empty");
+    private static readonly AssetLocation _packedBag = new("tentbag:tentbag-packed");
 
-    private static readonly AssetLocation[] BannedBlocks = {
+    private static readonly AssetLocation[] _bannedBlocks = {
         new("game:log-grown-*"),
         new("game:log-resin-*"),
         new("game:log-resinharvested-*"),
@@ -39,16 +39,16 @@ public class ItemTentBag : Item {
         new("game:forge")
     };
 
-    private static readonly List<BlockPos> EmptyBlockPosList = Array.Empty<BlockPos>().ToList();
-    private const int HighlightColor = 0xFF | (0x2F << 24);
+    private static readonly List<BlockPos> _emptyBlockPosList = Array.Empty<BlockPos>().ToList();
+    private const int _highlightColor = 0xFF | (0x2F << 24);
 
+    private static Config Config => TentBag.Instance.Config;
     private static bool IsAirOrNull(Block? block) => block is not { Replaceable: < 9505 };
-    private bool IsPlantOrRock(Block? block) => _config.ReplacePlantsAndRocks && block?.Replaceable is >= 5500 and <= 6500;
-    private bool IsReplaceable(Block? block) => IsAirOrNull(block) || IsPlantOrRock(block);
+    private static bool IsPlantOrRock(Block? block) => Config.ReplacePlantsAndRocks && block?.Replaceable is >= 5500 and <= 6500;
+    private static bool IsReplaceable(Block? block) => IsAirOrNull(block) || IsPlantOrRock(block);
 
     private static void SendClientError(EntityPlayer entity, string error) => TentBag.Instance.SendClientError(entity.Player, error);
 
-    private Config _config = null!;
     private long _highlightId;
 
     public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection? blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handling) {
@@ -62,8 +62,6 @@ public class ItemTentBag : Item {
             return;
         }
 
-        _config = Config.GetConfig();
-
         string contents = slot.Itemstack.Attributes.GetString("tent-contents");
         IBlockAccessor blockAccessor = entity.World.BlockAccessor;
         if (contents == null) {
@@ -76,8 +74,8 @@ public class ItemTentBag : Item {
     private void PackTent(EntityPlayer entity, IBlockAccessor blockAccessor, BlockSelection blockSel, ItemSlot slot) {
         int y = IsPlantOrRock(blockAccessor.GetBlock(blockSel.Position)) ? 1 : 0;
 
-        BlockPos start = blockSel.Position.AddCopy(-_config.Radius, 1 - y, -_config.Radius);
-        BlockPos end = blockSel.Position.AddCopy(_config.Radius, Math.Max(_config.Height, 3), _config.Radius);
+        BlockPos start = blockSel.Position.AddCopy(-Config.Radius, 1 - y, -Config.Radius);
+        BlockPos end = blockSel.Position.AddCopy(Config.Radius, Math.Max(Config.Height, 3), Config.Radius);
 
         if (!CanPack(entity, blockAccessor, start, end)) {
             return;
@@ -102,9 +100,9 @@ public class ItemTentBag : Item {
 
 
         // drop packed tentbag on the ground and remove empty from inventory
-        ItemStack packed = new(entity.World.GetItem(PackedBag), slot.StackSize);
+        ItemStack packed = new(entity.World.GetItem(_packedBag), slot.StackSize);
         packed.Attributes.SetString("tent-contents", bs.ToJson());
-        if (_config.PutTentInInventoryOnUse) {
+        if (Config.PutTentInInventoryOnUse) {
             ItemStack sinkStack = slot.Itemstack.Clone();
             slot.Itemstack.StackSize = 0;
             slot.Itemstack = packed;
@@ -115,14 +113,14 @@ public class ItemTentBag : Item {
         }
 
         // consume player saturation
-        entity.ReduceOnlySaturation(_config.BuildEffort);
+        entity.ReduceOnlySaturation(Config.BuildEffort);
     }
 
     private void UnpackTent(EntityPlayer entity, IBlockAccessor blockAccessor, BlockSelection blockSel, ItemSlot slot, string contents) {
         int y = IsPlantOrRock(blockAccessor.GetBlock(blockSel.Position)) ? 1 : 0;
 
-        BlockPos start = blockSel.Position.AddCopy(-_config.Radius, 0 - y, -_config.Radius);
-        BlockPos end = blockSel.Position.AddCopy(_config.Radius, Math.Max(_config.Height, 3), _config.Radius);
+        BlockPos start = blockSel.Position.AddCopy(-Config.Radius, 0 - y, -Config.Radius);
+        BlockPos end = blockSel.Position.AddCopy(Config.Radius, Math.Max(Config.Height, 3), Config.Radius);
 
         if (!CanUnpack(entity, blockAccessor, start, end)) {
             return;
@@ -149,15 +147,15 @@ public class ItemTentBag : Item {
         blockAccessor.Commit();
 
         // paste the schematic into the world
-        BlockPos adjustedStart = bs.AdjustStartPos(start.Add(_config.Radius, 1, _config.Radius), EnumOrigin.BottomCenter);
+        BlockPos adjustedStart = bs.AdjustStartPos(start.Add(Config.Radius, 1, Config.Radius), EnumOrigin.BottomCenter);
         bs.ReplaceMode = EnumReplaceMode.ReplaceAll;
         bs.Place(blockAccessor, entity.World, adjustedStart);
         blockAccessor.Commit();
         bs.PlaceEntitiesAndBlockEntities(blockAccessor, entity.World, adjustedStart, bs.BlockCodes, bs.ItemCodes);
 
         // drop empty tentbag on the ground and remove empty from inventory
-        ItemStack empty = new(entity.World.GetItem(EmptyBag), slot.StackSize);
-        if (_config.PutTentInInventoryOnUse) {
+        ItemStack empty = new(entity.World.GetItem(_emptyBag), slot.StackSize);
+        if (Config.PutTentInInventoryOnUse) {
             ItemStack sinkStack = slot.Itemstack.Clone();
             slot.Itemstack.StackSize = 0;
             slot.Itemstack = empty;
@@ -168,7 +166,7 @@ public class ItemTentBag : Item {
         }
 
         // consume player saturation
-        entity.ReduceOnlySaturation(_config.BuildEffort);
+        entity.ReduceOnlySaturation(Config.BuildEffort);
     }
 
     private bool CanPack(EntityPlayer entity, IBlockAccessor blockAccessor, BlockPos start, BlockPos end) {
@@ -204,7 +202,7 @@ public class ItemTentBag : Item {
                 blocks.Add(pos);
             } else if (pos.Y == start.Y) {
                 // ReSharper disable once InvertIf
-                if (_config.RequireFloor && !block.SideSolid[BlockFacing.indexUP]) {
+                if (Config.RequireFloor && !block.SideSolid[BlockFacing.indexUP]) {
                     if (!notified) {
                         SendClientError(entity, Lang.Get("tentbag:tentbag-solid-ground"));
                         notified = true;
@@ -230,7 +228,7 @@ public class ItemTentBag : Item {
             return false;
         }
 
-        foreach (AssetLocation hay in BannedBlocks) {
+        foreach (AssetLocation hay in _bannedBlocks) {
             if (hay.Equals(needle)) {
                 return true;
             }
@@ -252,9 +250,9 @@ public class ItemTentBag : Item {
             return false;
         }
 
-        entity.World.HighlightBlocks(entity.Player, 1337, blocks, Enumerable.Repeat(HighlightColor, blocks.Count).ToList());
+        entity.World.HighlightBlocks(entity.Player, 1337, blocks, Enumerable.Repeat(_highlightColor, blocks.Count).ToList());
 
-        _highlightId = api.Event.RegisterCallback(_ => entity.World.HighlightBlocks(entity.Player, 1337, EmptyBlockPosList), 2500);
+        _highlightId = api.Event.RegisterCallback(_ => entity.World.HighlightBlocks(entity.Player, 1337, _emptyBlockPosList), 2500);
 
         return true;
     }

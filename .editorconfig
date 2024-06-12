@@ -1,5 +1,36 @@
 root = true
 
 [*]
+charset = utf-8
 end_of_line = lf
+tab_width = 4
+indent_size = 4
+indent_style = space
 insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 9999
+
+[*.cs]
+dotnet_naming_rule.camel_case_for_private_internal_fields.severity = suggestion
+dotnet_naming_rule.camel_case_for_private_internal_fields.style = camel_case_underscore_style
+dotnet_naming_rule.camel_case_for_private_internal_fields.symbols = private_internal_protected_fields
+dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case
+dotnet_naming_style.camel_case_underscore_style.required_prefix = _
+dotnet_naming_symbols.private_internal_protected_fields.applicable_accessibilities = private, internal, protected
+dotnet_naming_symbols.private_internal_protected_fields.applicable_kinds = field
+
+csharp_style_var_elsewhere = false:suggestion
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = false:suggestion
+
+resharper_csharp_for_built_in_types = use_explicit_type
+resharper_csharp_for_simple_types = use_explicit_type
+resharper_csharp_for_other_types = use_explicit_type
+resharper_for_built_in_types = use_explicit_type
+resharper_for_simple_types = use_explicit_type
+resharper_for_other_types = use_explicit_type
+
+resharper_csharp_type_declaration_braces = end_of_line
+resharper_csharp_brace_style = end_of_line
+resharper_type_declaration_braces = end_of_line
+resharper_brace_style = end_of_line

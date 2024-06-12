@@ -1,20 +1,22 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.IO;
+﻿using System.IO;
 using Vintagestory.API.Config;
 
 namespace TentBag.Configuration;
 
 public class FileWatcher {
     private readonly FileSystemWatcher _watcher;
-    private readonly ConcurrentDictionary<string, bool> _queue = new();
+    private readonly TentBag _mod;
 
-    public FileWatcher() {
-        _watcher = new FileSystemWatcher(GamePaths.ModConfig);
+    public bool Queued { get; set; }
 
-        _watcher.Filter = $"{TentBag.Instance.Mod.Info.ModID}.yml";
-        _watcher.IncludeSubdirectories = false;
-        _watcher.EnableRaisingEvents = true;
+    public FileWatcher(TentBag mod) {
+        _mod = mod;
+
+        _watcher = new FileSystemWatcher(GamePaths.ModConfig) {
+            Filter = $"{mod.ModId}.json",
+            IncludeSubdirectories = false,
+            EnableRaisingEvents = true
+        };
 
         _watcher.Changed += Changed;
         _watcher.Created += Changed;
@@ -24,45 +26,42 @@ public class FileWatcher {
     }
 
     private void Changed(object sender, FileSystemEventArgs e) {
-        QueueReload(e.ChangeType);
+        QueueReload(true);
     }
 
     private void Error(object sender, ErrorEventArgs e) {
-        TentBag.Instance.Mod.Logger.Error(e.GetException().ToString());
+        _mod.Logger.Error(e.GetException().ToString());
         QueueReload();
     }
 
     /// <summary>
     /// My workaround for <a href='https://github.com/dotnet/runtime/issues/24079'>dotnet#24079</a>.
     /// </summary>
-    /// <param name="change">The <see cref='System.IO.FileSystemWatcher'>FileSystemWatcher</see>'s change type.</param>
-    private void QueueReload(WatcherChangeTypes? change = null) {
-        // we need a key for the dict
-        string changeType = change?.ToString().ToLowerInvariant() ?? "null";
-
-        if (!_queue.TryAdd(changeType, true)) {
-            // already queued for reload
+    private void QueueReload(bool changed = false) {
+        // check if already queued for reload
+        if (Queued) {
             return;
         }
 
-        // wait 100ms for other changes to process and then reload config
-        Callback(_ => {
-            if (!string.IsNullOrEmpty(changeType)) {
-                TentBag.Instance.Mod.Logger.Event($"Detected the config was {changeType}");
-            }
+        // mark as queued
+        Queued = true;
 
-            Config.Reload();
+        // inform console/log
+        if (changed) {
+            _mod.Logger.Event("Detected the config was changed. Reloading.");
+        }
 
-            // wait 100ms more to remove this change from the queue since the reload triggers another write
-            Callback(_ => _queue.TryRemove(changeType, out bool _), 100);
+        // wait for other changes to process
+        _mod.Api.Event.RegisterCallback(_ => {
+            // reload the config
+            _mod.ReloadConfig();
+
+            // wait some more to remove this change from the queue since the reload triggers another write
+            _mod.Api.Event.RegisterCallback(_ => {
+                // unmark as queued
+                Queued = false;
+            }, 100);
         }, 100);
-    }
-
-    private static void Callback(Action<float> action, int millisecondDelay) {
-        TentBag.Instance.Api?.Event.EnqueueMainThreadTask(
-            () => TentBag.Instance.Api?.Event.RegisterCallback(action, millisecondDelay),
-            ""
-        );
     }
 
     public void Dispose() {
