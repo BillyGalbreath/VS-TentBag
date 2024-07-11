@@ -1,13 +1,33 @@
 using System;
+using System.Globalization;
 using System.Reflection;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
-namespace TentBag.util;
+namespace tentbag.util;
 
 public static class Extensions {
     private static FieldInfo? _sprintCounter;
+
+    public static int ToColor(this string value) {
+        if (value.StartsWith('#')) {
+            value = value[1..];
+        } else if (value.StartsWith("0x", StringComparison.CurrentCultureIgnoreCase)) {
+            value = value[2..];
+        } else if (value.StartsWith("&h", StringComparison.CurrentCultureIgnoreCase)) {
+            value = value[2..];
+        }
+        return int.Parse(value, NumberStyles.HexNumber);
+    }
+
+    public static int Reverse(this int color) {
+        int a = color >> 24 & 0xFF;
+        int r = color >> 16 & 0xFF;
+        int g = color >> 8 & 0xFF;
+        int b = color & 0xFF;
+        return a << 24 | b << 16 | g << 8 | r;
+    }
 
     public static void ReduceOnlySaturation(this EntityPlayer entity, float amount) {
         EntityBehaviorHunger? hunger = entity.GetBehavior<EntityBehaviorHunger>();

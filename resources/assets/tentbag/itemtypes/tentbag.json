@@ -1,16 +1,15 @@
 {
   "code": "tentbag",
-  "maxstacksize": 1,
-  "shape": { "base": "tentbag:item/tentbag" },
   "class": "TentBag",
-  "textures": {
-    "mat": { "base": "game:block/wood/bed/normal/blanket/blueplaid-feet" },
-    "frill": { "base": "game:block/wood/bed/normal/blanket/blueplaid-feet-sides" }
-  },
+  "maxstacksize": 1,
   "variantgroups": [
-    { "code": "type", "states": ["empty", "packed"] }
+    { "code": "type", "states": [ "empty", "packed" ] }
   ],
-  "creativeinventory": { "general": ["*-empty"], "items": ["*-empty"] },
+  "behaviors": [
+    { "name": "Packable" }
+  ],
+  "shape": { "base": "tentbag:item/tentbag" },
+  "creativeinventory": { "general": [ "*-empty" ], "items": [ "*-empty" ] },
   "guiTransform": {
     "translation": { "x": 0, "y": 0, "z": 0 },
     "rotation": { "x": -30, "y": -44, "z": 180 },

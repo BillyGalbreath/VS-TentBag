@@ -1,12 +1,12 @@
 ﻿{
-  "item-tentbag-empty" : "Empty Tent Bag",
-  "item-tentbag-packed" : "Packed Tent Bag",
+  "item-tentbag-empty": "Empty Tent Bag",
+  "item-tentbag-packed": "Packed Tent Bag",
 
-  "itemdesc-tentbag-empty" : "A completely empty tent bag, need to pack something into it.",
-  "itemdesc-tentbag-packed" : "A packed tent bag ready to go for your adventures!",
-  
-  "tentbag-illegal-item": "Cannot pack {0} in a bag!",
-  "tentbag-solid-ground" : "Cannot unpack here, need solid ground!",
-  "tentbag-clear-area" : "Cannot unpack here, need a clear area!",
-  "tentbag-unpack-error": "Cannot unpack, internal error reading saved data!"
+  "itemdesc-tentbag-empty": "A completely empty tent bag, need to pack something into it.",
+  "itemdesc-tentbag-packed": "A packed tent bag ready to go for your adventures!",
+
+  "illegal-item-error": "Cannot pack {0} in a bag!",
+  "solid-ground-error": "Cannot unpack here, need solid ground!",
+  "clear-area-error": "Cannot unpack here, need a clear area!",
+  "unpack-error": "Cannot unpack, internal error reading saved data!"
 }

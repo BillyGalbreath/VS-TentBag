@@ -1,47 +1,15 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using TentBag.Configuration;
-using TentBag.util;
+using tentbag.configuration;
+using tentbag.util;
 using Vintagestory.API.Common;
-using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
 
-namespace TentBag.Items;
+namespace tentbag.behaviors;
 
-public class ItemTentBag : Item {
-    private static readonly AssetLocation _emptyBag = new("tentbag:tentbag-empty");
-    private static readonly AssetLocation _packedBag = new("tentbag:tentbag-packed");
-
-    private static readonly AssetLocation[] _bannedBlocks = {
-        new("game:log-grown-*"),
-        new("game:log-resin-*"),
-        new("game:log-resinharvested-*"),
-        new("game:statictranslocator-*"),
-        new("game:teleporterbase"),
-        new("game:crop-*"),
-        new("game:herb-*"),
-        new("game:mushroom-*"),
-        new("game:smallberrybush-*"),
-        new("game:bigberrybush-*"),
-        new("game:water-*"),
-        new("game:lava-*"),
-        new("game:farmland-*"),
-        new("game:rawclay-*"),
-        new("game:peat-*"),
-        new("game:rock-*"),
-        new("game:ore-*"),
-        new("game:crock-burned-*"),
-        new("game:bowl-meal"),
-        new("game:claypot-cooked"),
-        new("game:anvil-*"),
-        new("game:forge")
-    };
-
-    private static readonly List<BlockPos> _emptyBlockPosList = Array.Empty<BlockPos>().ToList();
-    private const int _highlightColor = 0xFF | (0x2F << 24);
-
+public class PackableBehavior : CollectibleBehavior {
     private static Config Config => TentBag.Instance.Config;
     private static bool IsAirOrNull(Block? block) => block is not { Replaceable: < 9505 };
     private static bool IsPlantOrRock(Block? block) => Config.ReplacePlantsAndRocks && block?.Replaceable is >= 5500 and <= 6500;
@@ -49,29 +17,40 @@ public class ItemTentBag : Item {
 
     private static void SendClientError(EntityPlayer entity, string error) => TentBag.Instance.SendClientError(entity.Player, error);
 
+    private readonly AssetLocation? _emptyBag;
+    private readonly AssetLocation? _packedBag;
+
     private long _highlightId;
 
-    public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection? blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handling) {
+    public PackableBehavior(CollectibleObject obj) : base(obj) {
+        string domain = obj.Code.Domain;
+        string path = obj.CodeWithoutParts(1);
+        _emptyBag = new AssetLocation(domain, $"{path}-empty");
+        _packedBag = new AssetLocation(domain, $"{path}-packed");
+    }
+
+    public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection? blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handHandling, ref EnumHandling handling) {
         if (blockSel == null || byEntity is not EntityPlayer entity) {
             return;
         }
 
-        handling = EnumHandHandling.PreventDefaultAction;
+        handHandling = EnumHandHandling.PreventDefaultAction;
 
-        if (api.Side != EnumAppSide.Server) {
+        if (entity.Api.Side != EnumAppSide.Server) {
             return;
         }
 
-        string contents = slot.Itemstack.Attributes.GetString("tent-contents");
-        IBlockAccessor blockAccessor = entity.World.BlockAccessor;
+        string contents = slot.Itemstack.Attributes.GetString("tent-contents") ?? slot.Itemstack.Attributes.GetString("packed-contents");
         if (contents == null) {
-            PackTent(entity, blockAccessor, blockSel, slot);
+            PackContents(entity, blockSel, slot);
         } else {
-            UnpackTent(entity, blockAccessor, blockSel, slot, contents);
+            UnpackContents(entity, blockSel, slot, contents);
         }
     }
 
-    private void PackTent(EntityPlayer entity, IBlockAccessor blockAccessor, BlockSelection blockSel, ItemSlot slot) {
+    private void PackContents(EntityPlayer entity, BlockSelection blockSel, ItemSlot slot) {
+        IBlockAccessor blockAccessor = entity.World.BlockAccessor;
+
         int y = IsPlantOrRock(blockAccessor.GetBlock(blockSel.Position)) ? 1 : 0;
 
         BlockPos start = blockSel.Position.AddCopy(-Config.Radius, 1 - y, -Config.Radius);
@@ -99,9 +78,9 @@ public class ItemTentBag : Item {
         blockAccessor.Commit();
 
 
-        // drop packed tentbag on the ground and remove empty from inventory
+        // drop packed item on the ground and remove empty from inventory
         ItemStack packed = new(entity.World.GetItem(_packedBag), slot.StackSize);
-        packed.Attributes.SetString("tent-contents", bs.ToJson());
+        packed.Attributes.SetString("packed-contents", bs.ToJson());
         if (Config.PutTentInInventoryOnUse) {
             ItemStack sinkStack = slot.Itemstack.Clone();
             slot.Itemstack.StackSize = 0;
@@ -116,7 +95,9 @@ public class ItemTentBag : Item {
         entity.ReduceOnlySaturation(Config.BuildEffort);
     }
 
-    private void UnpackTent(EntityPlayer entity, IBlockAccessor blockAccessor, BlockSelection blockSel, ItemSlot slot, string contents) {
+    private void UnpackContents(EntityPlayer entity, BlockSelection blockSel, ItemSlot slot, string contents) {
+        IBlockAccessor blockAccessor = entity.World.BlockAccessor;
+
         int y = IsPlantOrRock(blockAccessor.GetBlock(blockSel.Position)) ? 1 : 0;
 
         BlockPos start = blockSel.Position.AddCopy(-Config.Radius, 0 - y, -Config.Radius);
@@ -130,7 +111,7 @@ public class ItemTentBag : Item {
         string? error = null;
         BlockSchematic bs = BlockSchematic.LoadFromString(contents, ref error);
         if (!string.IsNullOrEmpty(error)) {
-            SendClientError(entity, Lang.Get("tentbag:tentbag-unpack-error"));
+            SendClientError(entity, Lang.UnpackError());
             return;
         }
 
@@ -153,7 +134,7 @@ public class ItemTentBag : Item {
         blockAccessor.Commit();
         bs.PlaceEntitiesAndBlockEntities(blockAccessor, entity.World, adjustedStart, bs.BlockCodes, bs.ItemCodes);
 
-        // drop empty tentbag on the ground and remove empty from inventory
+        // drop empty item on the ground and remove empty from inventory
         ItemStack empty = new(entity.World.GetItem(_emptyBag), slot.StackSize);
         if (Config.PutTentInInventoryOnUse) {
             ItemStack sinkStack = slot.Itemstack.Clone();
@@ -180,7 +161,7 @@ public class ItemTentBag : Item {
                 blocks.Add(pos);
             } else if (IsBannedBlock(block.Code)) {
                 if (!notified) {
-                    SendClientError(entity, Lang.Get("tentbag:tentbag-illegal-item", block.GetPlacedBlockName(entity.World, pos)));
+                    SendClientError(entity, Lang.IllegalItemError(block.GetPlacedBlockName(entity.World, pos)));
                     notified = true;
                 }
 
@@ -188,7 +169,7 @@ public class ItemTentBag : Item {
             }
         });
 
-        return !HighlightBlocks(entity, blocks);
+        return !ShouldHighlightBlocks(entity, blocks);
     }
 
     private bool CanUnpack(EntityPlayer entity, IBlockAccessor blockAccessor, BlockPos start, BlockPos end) {
@@ -204,7 +185,7 @@ public class ItemTentBag : Item {
                 // ReSharper disable once InvertIf
                 if (Config.RequireFloor && !block.SideSolid[BlockFacing.indexUP]) {
                     if (!notified) {
-                        SendClientError(entity, Lang.Get("tentbag:tentbag-solid-ground"));
+                        SendClientError(entity, Lang.SolidGroundError());
                         notified = true;
                     }
 
@@ -212,7 +193,7 @@ public class ItemTentBag : Item {
                 }
             } else if (!IsReplaceable(block)) {
                 if (!notified) {
-                    SendClientError(entity, Lang.Get("tentbag:tentbag-clear-area"));
+                    SendClientError(entity, Lang.ClearAreaError());
                     notified = true;
                 }
 
@@ -220,20 +201,21 @@ public class ItemTentBag : Item {
             }
         });
 
-        return !HighlightBlocks(entity, blocks);
+        return !ShouldHighlightBlocks(entity, blocks);
     }
 
-    private static bool IsBannedBlock(AssetLocation? needle) {
-        if (needle == null) {
+    private static bool IsBannedBlock(AssetLocation? block) {
+        if (block == null) {
             return false;
         }
 
-        foreach (AssetLocation hay in _bannedBlocks) {
-            if (hay.Equals(needle)) {
+        foreach (string banned in Config.BannedBlocks) {
+            AssetLocation code = new(banned);
+            if (code.Equals(block)) {
                 return true;
             }
 
-            if (hay.IsWildCard && WildcardUtil.GetWildcardValue(hay, needle) != null) {
+            if (code.IsWildCard && WildcardUtil.GetWildcardValue(code, block) != null) {
                 return true;
             }
         }
@@ -241,18 +223,23 @@ public class ItemTentBag : Item {
         return false;
     }
 
-    private bool HighlightBlocks(EntityPlayer entity, List<BlockPos> blocks) {
-        if (_highlightId > 0) {
-            api.Event.UnregisterCallback(_highlightId);
-        }
-
+    private bool ShouldHighlightBlocks(EntityPlayer entity, List<BlockPos> blocks) {
         if (blocks.Count <= 0) {
             return false;
         }
 
-        entity.World.HighlightBlocks(entity.Player, 1337, blocks, Enumerable.Repeat(_highlightColor, blocks.Count).ToList());
+        if (_highlightId > 0) {
+            entity.Api.Event.UnregisterCallback(_highlightId);
+        }
 
-        _highlightId = api.Event.RegisterCallback(_ => entity.World.HighlightBlocks(entity.Player, 1337, _emptyBlockPosList), 2500);
+        int color = Config.HighlightErrorColor.ToColor().Reverse();
+        List<int> colors = Enumerable.Repeat(color, blocks.Count).ToList();
+        entity.World.HighlightBlocks(entity.Player, 1337, blocks, colors);
+
+        _highlightId = entity.Api.Event.RegisterCallback(_ => {
+            List<BlockPos> empty = Array.Empty<BlockPos>().ToList();
+            entity.World.HighlightBlocks(entity.Player, 1337, empty);
+        }, 2500);
 
         return true;
     }

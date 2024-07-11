@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using Vintagestory.API.Config;
 
-namespace TentBag.Configuration;
+namespace tentbag.configuration;
 
 public class FileWatcher {
     private readonly FileSystemWatcher _watcher;

@@ -5,15 +5,12 @@
   },
   "textureWidth": 16,
   "textureHeight": 16,
-  "textureSizes": {
-  },
   "textures": {
     "mat": "game:block/wood/bed/normal/blanket/blueplaid-feet",
     "frill": "game:block/wood/bed/normal/blanket/blueplaid-feet-sides"
   },
   "elements": [
     {
-      "name": "Cube1",
       "from": [ 2.0, 0.0, 3.0 ],
       "to": [ 14.0, 2.0, 11.0 ],
       "rotationOrigin": [ 2.0, 0.0, 3.0 ],
@@ -27,7 +24,6 @@
       }
     },
     {
-      "name": "Cube2",
       "from": [ 1.8, 0.5, 2.6 ],
       "to": [ 14.2, 1.5, 10.6 ],
       "rotationOrigin": [ 1.8, 0.5, 2.6 ],
@@ -41,7 +37,6 @@
       }
     },
     {
-      "name": "Cube3",
       "from": [ 1.99, 1.67, 10.6 ],
       "to": [ 14.01, 2.17, 12.1 ],
       "rotationOrigin": [ 1.9, 1.6, 10.6 ],
@@ -55,7 +50,6 @@
       }
     },
     {
-      "name": "Cube4",
       "from": [ 2.0, 0.56, 11.75 ],
       "to": [ 14.0, 1.06, 13.25 ],
       "rotationOrigin": [ 2.0, 0.5, 11.7 ],
@@ -70,7 +64,6 @@
       }
     },
     {
-      "name": "Cube5",
       "from": [ 2.0, 0.4, 13.3 ],
       "to": [ 14.0, 0.4, 15.3 ],
       "rotationOrigin": [ 2.0, 0.4, 13.3 ],

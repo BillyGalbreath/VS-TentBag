@@ -2,15 +2,17 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using ProtoBuf;
-using TentBag.Configuration;
-using TentBag.Items;
+using tentbag.behaviors;
+using tentbag.configuration;
+using tentbag.item;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.Server;
 
-namespace TentBag;
+namespace tentbag;
 
+// ReSharper disable once ClassNeverInstantiated.Global
 public class TentBag : ModSystem {
     public static TentBag Instance { get; private set; } = null!;
 
@@ -30,10 +32,10 @@ public class TentBag : ModSystem {
 
     public override void StartPre(ICoreAPI api) {
         Api = api;
-        ReloadConfig();
     }
 
     public override void Start(ICoreAPI api) {
+        api.RegisterCollectibleBehaviorClass("Packable", typeof(PackableBehavior));
         api.RegisterItemClass("TentBag", typeof(ItemTentBag));
     }
 
@@ -50,6 +52,8 @@ public class TentBag : ModSystem {
     public override void StartServerSide(ICoreServerAPI sapi) {
         _channel = sapi.Network.RegisterChannel(Mod.Info.ModID)
             .RegisterMessageType<ErrorPacket>();
+
+        ReloadConfig();
     }
 
     public void SendClientError(IPlayer? player, string error) {
