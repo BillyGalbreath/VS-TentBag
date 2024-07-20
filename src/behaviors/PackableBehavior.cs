@@ -66,16 +66,17 @@ public class PackableBehavior : CollectibleBehavior {
         bs.Pack(entity.World, start);
 
         // clear area in world
-        blockAccessor.WalkBlocks(start, end, (block, posX, posY, posZ) => {
+        IBulkBlockAccessor bulkBlockAccessor = entity.World.BulkBlockAccessor;
+        bulkBlockAccessor.WalkBlocks(start, end, (block, posX, posY, posZ) => {
             if (block.BlockId == 0) {
                 return;
             }
 
             BlockPos pos = new(posX, posY, posZ, 0);
-            blockAccessor.SetBlock(0, pos);
-            blockAccessor.MarkBlockModified(pos);
+            bulkBlockAccessor.SetBlock(0, pos);
+            bulkBlockAccessor.MarkBlockModified(pos);
         });
-        blockAccessor.Commit();
+        bulkBlockAccessor.Commit();
 
 
         // drop packed item on the ground and remove empty from inventory
@@ -116,22 +117,23 @@ public class PackableBehavior : CollectibleBehavior {
         }
 
         // clear area in world
-        blockAccessor.WalkBlocks(start.AddCopy(0, 1, 0), end, (block, posX, posY, posZ) => {
+        IBulkBlockAccessor bulkBlockAccessor = entity.World.BulkBlockAccessor;
+        bulkBlockAccessor.WalkBlocks(start.AddCopy(0, 1, 0), end, (block, posX, posY, posZ) => {
             if (block.BlockId == 0) {
                 return;
             }
 
             BlockPos pos = new(posX, posY, posZ, 0);
-            blockAccessor.SetBlock(0, pos);
-            blockAccessor.MarkBlockModified(pos);
+            bulkBlockAccessor.SetBlock(0, pos);
+            bulkBlockAccessor.MarkBlockModified(pos);
         });
-        blockAccessor.Commit();
+        bulkBlockAccessor.Commit();
 
         // paste the schematic into the world
         BlockPos adjustedStart = bs.AdjustStartPos(start.Add(Config.Radius, 1, Config.Radius), EnumOrigin.BottomCenter);
         bs.ReplaceMode = EnumReplaceMode.ReplaceAll;
-        bs.Place(blockAccessor, entity.World, adjustedStart);
-        blockAccessor.Commit();
+        bs.Place(bulkBlockAccessor, entity.World, adjustedStart);
+        bulkBlockAccessor.Commit();
         bs.PlaceEntitiesAndBlockEntities(blockAccessor, entity.World, adjustedStart, bs.BlockCodes, bs.ItemCodes);
 
         // drop empty item on the ground and remove empty from inventory
