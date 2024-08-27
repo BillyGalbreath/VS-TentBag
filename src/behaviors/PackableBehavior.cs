@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using tentbag.configuration;
 using tentbag.util;
 using Vintagestory.API.Common;
@@ -65,7 +62,7 @@ public class PackableBehavior : CollectibleBehavior {
         bs.AddAreaWithoutEntities(entity.World, start, end);
         bs.Pack(entity.World, start);
 
-        // clear area in world
+        // clear area in world (requires bulk block accessor to prevent decor dupes)
         IBulkBlockAccessor bulkBlockAccessor = entity.World.BulkBlockAccessor;
         bulkBlockAccessor.WalkBlocks(start, end, (block, posX, posY, posZ) => {
             if (block.BlockId == 0) {
@@ -75,9 +72,11 @@ public class PackableBehavior : CollectibleBehavior {
             BlockPos pos = new(posX, posY, posZ, 0);
             bulkBlockAccessor.SetBlock(0, pos);
             bulkBlockAccessor.MarkBlockModified(pos);
+            bulkBlockAccessor.MarkBlockDirty(pos);
+            bulkBlockAccessor.MarkBlockEntityDirty(pos);
+            bulkBlockAccessor.MarkChunkDecorsModified(pos);
         });
         bulkBlockAccessor.Commit();
-
 
         // drop packed item on the ground and remove empty from inventory
         ItemStack packed = new(entity.World.GetItem(_packedBag), slot.StackSize);
@@ -116,7 +115,7 @@ public class PackableBehavior : CollectibleBehavior {
             return;
         }
 
-        // clear area in world
+        // clear area in world (requires bulk block accessor to prevent decor dupes)
         IBulkBlockAccessor bulkBlockAccessor = entity.World.BulkBlockAccessor;
         bulkBlockAccessor.WalkBlocks(start.AddCopy(0, 1, 0), end, (block, posX, posY, posZ) => {
             if (block.BlockId == 0) {
@@ -126,14 +125,17 @@ public class PackableBehavior : CollectibleBehavior {
             BlockPos pos = new(posX, posY, posZ, 0);
             bulkBlockAccessor.SetBlock(0, pos);
             bulkBlockAccessor.MarkBlockModified(pos);
+            bulkBlockAccessor.MarkBlockDirty(pos);
+            bulkBlockAccessor.MarkBlockEntityDirty(pos);
+            bulkBlockAccessor.MarkChunkDecorsModified(pos);
         });
         bulkBlockAccessor.Commit();
 
-        // paste the schematic into the world
+        // paste the schematic into the world (requires regular block accessor to prevent lighting/room issues)
         BlockPos adjustedStart = bs.AdjustStartPos(start.Add(Config.Radius, 1, Config.Radius), EnumOrigin.BottomCenter);
         bs.ReplaceMode = EnumReplaceMode.ReplaceAll;
-        bs.Place(bulkBlockAccessor, entity.World, adjustedStart);
-        bulkBlockAccessor.Commit();
+        bs.Place(blockAccessor, entity.World, adjustedStart);
+        blockAccessor.Commit();
         bs.PlaceEntitiesAndBlockEntities(blockAccessor, entity.World, adjustedStart, bs.BlockCodes, bs.ItemCodes);
 
         // drop empty item on the ground and remove empty from inventory
