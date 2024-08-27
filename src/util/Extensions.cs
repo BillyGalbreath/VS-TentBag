@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using System.Reflection;
 using Vintagestory.API.Common;

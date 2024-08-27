@@ -1,5 +1,4 @@
-﻿using System.IO;
-using Vintagestory.API.Config;
+﻿using Vintagestory.API.Config;
 
 namespace tentbag.configuration;
 
