@@ -25,6 +25,9 @@ dotnet_naming_symbols.private_internal_protected_fields.applicable_kinds = field
 csharp_style_var_elsewhere = false:suggestion
 csharp_style_var_for_built_in_types = false:suggestion
 csharp_style_var_when_type_is_apparent = false:suggestion
+csharp_new_line_before_catch = false
+csharp_new_line_before_else = false
+csharp_new_line_before_finally = false
 
 resharper_csharp_for_built_in_types = use_explicit_type
 resharper_csharp_for_simple_types = use_explicit_type
