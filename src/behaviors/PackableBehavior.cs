@@ -62,21 +62,8 @@ public class PackableBehavior : CollectibleBehavior {
         bs.AddAreaWithoutEntities(entity.World, start, end);
         bs.Pack(entity.World, start);
 
-        // clear area in world (requires bulk block accessor to prevent decor dupes)
-        IBulkBlockAccessor bulkBlockAccessor = entity.World.BulkBlockAccessor;
-        bulkBlockAccessor.WalkBlocks(start, end, (block, posX, posY, posZ) => {
-            if (block.BlockId == 0) {
-                return;
-            }
-
-            BlockPos pos = new(posX, posY, posZ, 0);
-            bulkBlockAccessor.SetBlock(0, pos);
-            bulkBlockAccessor.MarkBlockModified(pos);
-            bulkBlockAccessor.MarkBlockDirty(pos);
-            bulkBlockAccessor.MarkBlockEntityDirty(pos);
-            bulkBlockAccessor.MarkChunkDecorsModified(pos);
-        });
-        bulkBlockAccessor.Commit();
+        // clear area in world
+        ClearArea(entity.World, start, end);
 
         // drop packed item on the ground and remove empty from inventory
         ItemStack packed = new(entity.World.GetItem(_packedBag), slot.StackSize);
@@ -115,21 +102,8 @@ public class PackableBehavior : CollectibleBehavior {
             return;
         }
 
-        // clear area in world (requires bulk block accessor to prevent decor dupes)
-        IBulkBlockAccessor bulkBlockAccessor = entity.World.BulkBlockAccessor;
-        bulkBlockAccessor.WalkBlocks(start.AddCopy(0, 1, 0), end, (block, posX, posY, posZ) => {
-            if (block.BlockId == 0) {
-                return;
-            }
-
-            BlockPos pos = new(posX, posY, posZ, 0);
-            bulkBlockAccessor.SetBlock(0, pos);
-            bulkBlockAccessor.MarkBlockModified(pos);
-            bulkBlockAccessor.MarkBlockDirty(pos);
-            bulkBlockAccessor.MarkBlockEntityDirty(pos);
-            bulkBlockAccessor.MarkChunkDecorsModified(pos);
-        });
-        bulkBlockAccessor.Commit();
+        // clear area in world
+        ClearArea(entity.World, start.AddCopy(0, 1, 0), end);
 
         // paste the schematic into the world (requires regular block accessor to prevent lighting/room issues)
         BlockPos adjustedStart = bs.AdjustStartPos(start.Add(Config.Radius, 1, Config.Radius), EnumOrigin.BottomCenter);
@@ -152,6 +126,27 @@ public class PackableBehavior : CollectibleBehavior {
 
         // consume player saturation
         entity.ReduceOnlySaturation(Config.BuildEffort);
+    }
+
+    private static void ClearArea(IWorldAccessor world, BlockPos start, BlockPos end) {
+        // first we bulk clear the area to prevent decor duplication issues
+        ClearArea(world.BulkBlockAccessor, start, end);
+        // second we individually clear each block to prevent lighting/room/minimap issues
+        ClearArea(world.BlockAccessor, start, end);
+    }
+
+    private static void ClearArea(IBlockAccessor blockAccessor, BlockPos start, BlockPos end) {
+        blockAccessor.WalkBlocks(start, end, (block, x, y, z) => {
+            if (block.BlockId == 0) {
+                // ignore air blocks, nothing to clear
+                return;
+            }
+
+            // set block to air
+            blockAccessor.SetBlock(0, new BlockPos(x, y, z, 0));
+        });
+        // commit bulk job, if any
+        blockAccessor.Commit();
     }
 
     private bool CanPack(EntityPlayer entity, IBlockAccessor blockAccessor, BlockPos start, BlockPos end) {
