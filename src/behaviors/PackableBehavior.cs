@@ -59,8 +59,8 @@ public class PackableBehavior : CollectibleBehavior {
 
         // create schematic of area
         BlockSchematic bs = new();
-        bs.AddAreaWithoutEntities(entity.World, start, end);
-        bs.Pack(entity.World, start);
+        bs.AddAreaWithoutEntities(entity.World, blockAccessor, start, end);
+        bs.PackIncludingAir(entity.World, start);
 
         // clear area in world
         ClearArea(entity.World, start, end);
